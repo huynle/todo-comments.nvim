@@ -5,6 +5,7 @@ local M = {}
 
 M.keywords = {}
 M.keyword_regex = {}
+M.keyword_ft = {}
 --- @type TodoOptions
 M.options = {}
 M.loaded = false
@@ -108,11 +109,22 @@ function M._setup()
   for kw, opts in pairs(M.options.keywords) do
     M.keywords[kw] = kw
     for idx, alt in pairs(opts.alt or {}) do
-      if type(idx) == "number" then
+      local key_T = type(idx)
+      local val_T = type(alt)
+      if key_T == "string" and val_T == "table" then -- more stuff hidden
+        M.keywords[idx] = kw
+        M.keyword_ft[idx] = alt.ft or {}
+        if alt.regex then -- only add regex if it is available
+          M.keyword_regex[idx] = alt.regex
+        end
+      elseif key_T == "number" and val_T == "string" then -- text string
         M.keywords[alt] = kw
-      else
+        M.keyword_ft[alt] = {}
+      elseif key_T == "string" and val_T == "string" then -- regex string
         M.keywords[idx] = kw
         M.keyword_regex[idx] = alt
+        M.keyword_ft[idx] = {}
+      else
       end
     end
   end
@@ -122,8 +134,11 @@ function M._setup()
     boundary2 = boundary2 or ""
     local kws_input = keywords or vim.tbl_keys(M.keywords)
     local kws = {}
+    local kws_ft = {}
     for _, kw in pairs(kws_input or {}) do
       local possible_regex = M.keyword_regex[kw]
+      -- get the ft for each keyword
+      kws_ft[kw] = M.keyword_ft[kw]
       if possible_regex then
         kws[kw] = possible_regex
       else
@@ -137,6 +152,11 @@ function M._setup()
   end
 
   function M.search_regex(keywords)
+    local kws = vim.tbl_values(tags(keywords, "\\b", "\\b"))
+    return M.options.search.pattern:gsub("KEYWORDS", table.concat(kws, "|"))
+  end
+
+  function M.search_ft(keywords)
     local kws = vim.tbl_values(tags(keywords, "\\b", "\\b"))
     return M.options.search.pattern:gsub("KEYWORDS", table.concat(kws, "|"))
   end

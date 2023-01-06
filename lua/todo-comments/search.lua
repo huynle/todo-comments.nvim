@@ -67,23 +67,21 @@ function M.search(cb, opts)
 
   local args =
     vim.tbl_flatten({ Config.options.search.args, Config.search_regex(keywords_filter(opts.keywords)), opts.cwd })
-  Job
-    :new({
-      command = command,
-      args = args,
-      on_exit = vim.schedule_wrap(function(j, code)
-        if code == 2 then
-          local error = table.concat(j:stderr_result(), "\n")
-          Util.error(command .. " failed with code " .. code .. "\n" .. error)
-        end
-        if code == 1 and opts.disable_not_found_warnings ~= true then
-          Util.warn("no todos found")
-        end
-        local lines = j:result()
-        cb(M.process(lines))
-      end),
-    })
-    :start()
+  Job:new({
+    command = command,
+    args = args,
+    on_exit = vim.schedule_wrap(function(j, code)
+      if code == 2 then
+        local error = table.concat(j:stderr_result(), "\n")
+        Util.error(command .. " failed with code " .. code .. "\n" .. error)
+      end
+      if code == 1 and opts.disable_not_found_warnings ~= true then
+        Util.warn("no todos found")
+      end
+      local lines = j:result()
+      cb(M.process(lines))
+    end),
+  }):start()
 end
 
 local function parse_opts(opts)
