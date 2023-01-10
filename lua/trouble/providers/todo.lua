@@ -12,7 +12,7 @@ local function todo(_win, _buf, cb, opts)
       local pitem = {
         row = row,
         col = col,
-        message = item.text,
+        message = item.message,
         sign = Config.options.keywords[item.tag].icon,
         sign_hl = "TodoFg" .. item.tag,
         -- code = string.lower(item.tag),

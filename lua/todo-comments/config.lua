@@ -6,6 +6,7 @@ local M = {}
 M.keywords = {}
 M.keyword_regex = {}
 M.keyword_ft = {}
+M.keyword_glob = {}
 --- @type TodoOptions
 M.options = {}
 M.loaded = false
@@ -114,16 +115,19 @@ function M._setup()
       if key_T == "string" and val_T == "table" then -- more stuff hidden
         M.keywords[idx] = kw
         M.keyword_ft[idx] = alt.ft or {}
+        M.keyword_glob[idx] = alt.glob or {}
         if alt.regex then -- only add regex if it is available
           M.keyword_regex[idx] = alt.regex
         end
       elseif key_T == "number" and val_T == "string" then -- text string
         M.keywords[alt] = kw
         M.keyword_ft[alt] = {}
+        M.keyword_glob[alt] = {}
       elseif key_T == "string" and val_T == "string" then -- regex string
         M.keywords[idx] = kw
         M.keyword_regex[idx] = alt
         M.keyword_ft[idx] = {}
+        M.keyword_glob[idx] = {}
       else
       end
     end
@@ -134,11 +138,9 @@ function M._setup()
     boundary2 = boundary2 or ""
     local kws_input = keywords or vim.tbl_keys(M.keywords)
     local kws = {}
-    local kws_ft = {}
     for _, kw in pairs(kws_input or {}) do
       local possible_regex = M.keyword_regex[kw]
       -- get the ft for each keyword
-      kws_ft[kw] = M.keyword_ft[kw]
       if possible_regex then
         kws[kw] = possible_regex
       else
@@ -157,8 +159,39 @@ function M._setup()
   end
 
   function M.search_ft(keywords)
-    local kws = vim.tbl_values(tags(keywords, "\\b", "\\b"))
-    return M.options.search.pattern:gsub("KEYWORDS", table.concat(kws, "|"))
+    local search_ft = {}
+    for _, kw in ipairs(keywords) do
+      for _, item in ipairs(M.keyword_ft[kw]) do
+        table.insert(search_ft, item)
+      end
+    end
+    if M.options.search.ft_pattern and next(search_ft) then
+      local fts = {}
+      for _, item in pairs(search_ft) do
+        local formatted_ft = M.options.search.ft_pattern:gsub("FT", item)
+        table.insert(fts, formatted_ft)
+      end
+      return fts
+    end
+    return ""
+  end
+
+  function M.search_glob(keywords)
+    local search_glob = {}
+    for _, kw in ipairs(keywords) do
+      for _, item in ipairs(M.keyword_glob[kw]) do
+        table.insert(search_glob, item)
+      end
+    end
+    if M.options.search.glob_pattern and next(search_glob) then
+      local globs = {}
+      for _, item in pairs(search_glob) do
+        local formatted_glob = M.options.search.glob_pattern:gsub("GLOB", item)
+        table.insert(globs, formatted_glob)
+      end
+      return globs
+    end
+    return ""
   end
 
   M.hl_regex = {}
