@@ -169,11 +169,11 @@ function M._setup()
       local fts = {}
       for _, item in pairs(search_ft) do
         local formatted_ft = M.options.search.ft_pattern:gsub("FT", item)
-        table.insert(fts, formatted_ft)
+        table.insert(fts, vim.split(formatted_ft, "[%s$,]+"))
       end
       return fts
     end
-    return ""
+    return
   end
 
   function M.search_glob(keywords)
@@ -187,11 +187,11 @@ function M._setup()
       local globs = {}
       for _, item in pairs(search_glob) do
         local formatted_glob = M.options.search.glob_pattern:gsub("GLOB", item)
-        table.insert(globs, formatted_glob)
+        table.insert(globs, vim.split(formatted_glob, "[%s$,]+"))
       end
       return globs
     end
-    return ""
+    return
   end
 
   M.hl_regex = {}
@@ -207,7 +207,7 @@ function M._setup()
   end
   M.colors()
   M.signs()
-  require("todo-comments.highlight").start()
+  -- require("todo-comments.highlight").start()
   M.loaded = true
 end
 
