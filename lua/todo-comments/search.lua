@@ -71,6 +71,7 @@ function M.search(cb, opts)
       Config.options.search.args,
       Config.search_ft(keywords_filter(kw)),
       Config.search_glob(keywords_filter(kw)),
+      Config.search_addl(keywords_filter(kw)),
       -- { "--glob", "todo.txt" },
       Config.search_regex(keywords_filter(kw)),
       opts.cwd,
