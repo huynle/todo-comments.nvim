@@ -7,6 +7,7 @@ M.keywords = {}
 M.keyword_regex = {}
 M.keyword_ft = {}
 M.keyword_glob = {}
+M.keyword_addl = {}
 --- @type TodoOptions
 M.options = {}
 M.loaded = false
@@ -116,6 +117,7 @@ function M._setup()
         M.keywords[idx] = kw
         M.keyword_ft[idx] = alt.ft or {}
         M.keyword_glob[idx] = alt.glob or {}
+        M.keyword_addl[idx] = alt.addl_args or {}
         if alt.regex then -- only add regex if it is available
           M.keyword_regex[idx] = alt.regex
         end
@@ -123,11 +125,13 @@ function M._setup()
         M.keywords[alt] = kw
         M.keyword_ft[alt] = {}
         M.keyword_glob[alt] = {}
+        M.keyword_addl[alt] = {}
       elseif key_T == "string" and val_T == "string" then -- regex string
         M.keywords[idx] = kw
         M.keyword_regex[idx] = alt
         M.keyword_ft[idx] = {}
         M.keyword_glob[idx] = {}
+        M.keyword_addl[idx] = {}
       else
       end
     end
@@ -190,6 +194,23 @@ function M._setup()
         table.insert(globs, vim.split(formatted_glob, "[%s$,]+"))
       end
       return globs
+    end
+    return
+  end
+
+  function M.search_addl(keywords)
+    local search_addl = {}
+    for _, kw in ipairs(keywords) do
+      for _, item in ipairs(M.keyword_addl[kw]) do
+        table.insert(search_addl, item)
+      end
+    end
+    if not vim.tbl_isempty(search_addl) then
+      local addls = {}
+      for _, item in pairs(search_addl) do
+        table.insert(addls, vim.split(item, "[%s$,]+"))
+      end
+      return addls
     end
     return
   end

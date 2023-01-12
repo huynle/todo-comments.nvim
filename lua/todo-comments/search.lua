@@ -16,7 +16,7 @@ local function keywords_filter(opts_keywords)
   end, all_keywords)
 end
 
-function M.process(lines)
+function M.process(lines, matched_kw)
   local results = {}
   for _, line in pairs(lines) do
     local file, row, col, text = line:match("^(.+):(%d+):(%d+):(.*)$")
@@ -28,7 +28,7 @@ function M.process(lines)
         line = text,
       }
 
-      local start, finish, kw = Highlight.match(text)
+      local start, finish, kw = Highlight.match(text, matched_kw)
 
       if start then
         kw = Config.keywords[kw] or kw
@@ -67,10 +67,12 @@ function M.search(cb, opts)
 
   local lines = {}
   for _, kw in pairs(vim.split(opts.keywords, "[%s$,]+")) do
+    lines[kw] = {}
     local args = vim.tbl_flatten({
       Config.options.search.args,
       Config.search_ft(keywords_filter(kw)),
       Config.search_glob(keywords_filter(kw)),
+      Config.search_addl(keywords_filter(kw)),
       -- { "--glob", "todo.txt" },
       Config.search_regex(keywords_filter(kw)),
       opts.cwd,
@@ -86,26 +88,17 @@ function M.search(cb, opts)
       --   if code == 1 and opts.disable_not_found_warnings ~= true then
       --     Util.warn("no todos found")
       --   end
-      --   table.insert(lines, j:result())
+      --   cb(M.process(j:result(), { [kw] = Config.hl_regex[kw] }))
       -- end),
       on_stdout = function(_, line)
-        table.insert(lines, line)
+        table.insert(lines[kw], line)
       end,
     }):sync()
-    -- :start()
-    -- :wait()
-    -- table.insert(jobs, j)
   end
 
-  -- for _, item in ipairs(jobs) do
-  --   item.sync()
-  -- end
-
-  -- for _, item in ipairs(jobs) do
-  --   item.wait()
-  -- end
-
-  cb(M.process(lines))
+  for kw, found in pairs(lines) do
+    cb(M.process(found, { [kw] = Config.hl_regex[kw] }))
+  end
 end
 
 local function parse_opts(opts)
