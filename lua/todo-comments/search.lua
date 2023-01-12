@@ -66,6 +66,7 @@ function M.search(cb, opts)
   end
 
   local lines = {}
+  local jobs = {}
   for _, kw in pairs(vim.split(opts.keywords, "[%s$,]+")) do
     lines[kw] = {}
     local args = vim.tbl_flatten({
@@ -77,7 +78,7 @@ function M.search(cb, opts)
       Config.search_regex(keywords_filter(kw)),
       opts.cwd,
     })
-    Job:new({
+    local cur_job = Job:new({
       command = command,
       args = args,
       -- on_exit = vim.schedule_wrap(function(j, code)
@@ -93,12 +94,27 @@ function M.search(cb, opts)
       on_stdout = function(_, line)
         table.insert(lines[kw], line)
       end,
-    }):sync()
+    })
+    table.insert(jobs, cur_job)
   end
 
-  for kw, found in pairs(lines) do
-    cb(M.process(found, { [kw] = Config.hl_regex[kw] }))
+  for i = 2, #jobs do
+    jobs[i - 1]:and_then(jobs[i])
   end
+
+  jobs[1]:sync()
+  for i = 2, #jobs do
+    jobs[i]:wait()
+  end
+
+  local total_results = {}
+  for kw, found in pairs(lines) do
+    local results = M.process(found, { [kw] = Config.hl_regex[kw] })
+    for _, result in ipairs(results) do
+      table.insert(total_results, result)
+    end
+  end
+  cb(total_results)
 end
 
 local function parse_opts(opts)
